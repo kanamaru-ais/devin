@@ -1,0 +1,192 @@
+# ============================================================
+# CI ワークフロー: タスク管理アプリケーション
+# ============================================================
+# このワークフローは、コードの品質を自動的にチェックします。
+# - main ブランチへの push や Pull Request で自動実行されます
+# - GitHub の Actions タブから手動で実行することもできます
+# ============================================================
+
+# ワークフローの名前（GitHub の Actions タブに表示されます）
+name: CI
+
+# ============================================================
+# トリガー設定: いつこのワークフローを実行するか
+# ============================================================
+on:
+  # main ブランチに push されたときに自動実行
+  push:
+    branches:
+      - main
+
+  # main ブランチへの Pull Request が作成・更新されたときに自動実行
+  pull_request:
+    branches:
+      - main
+
+  # 手動実行を有効にする設定
+  # GitHub の Actions タブ → このワークフロー → "Run workflow" ボタンで実行できます
+  workflow_dispatch:
+
+# ============================================================
+# ジョブ定義: 実際に実行する処理
+# ============================================================
+jobs:
+  # ----------------------------------------------------------
+  # バックエンドテスト
+  # ----------------------------------------------------------
+  backend-test:
+    # ジョブ名（GitHub の Actions タブに表示されます）
+    name: Backend Tests
+
+    # 実行環境（Ubuntu の最新版を使用）
+    runs-on: ubuntu-latest
+
+    # デフォルトの作業ディレクトリをバックエンドに設定
+    # これにより、各 step で毎回 cd する必要がなくなります
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      # --------------------------------------------------------
+      # Step 1: リポジトリのコードをチェックアウト（取得）
+      # --------------------------------------------------------
+      - name: リポジトリをチェックアウト
+        # actions/checkout は GitHub 公式のアクションで、
+        # リポジトリのコードを CI 環境にコピーします
+        uses: actions/checkout@v4
+
+      # --------------------------------------------------------
+      # Step 2: Node.js のセットアップ
+      # --------------------------------------------------------
+      - name: Node.js をセットアップ
+        # actions/setup-node は Node.js をインストールする公式アクション
+        uses: actions/setup-node@v4
+        with:
+          # 使用する Node.js のバージョン（LTS = 長期サポート版）
+          node-version: '20'
+          # npm のキャッシュを有効にして、依存パッケージのインストールを高速化
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      # --------------------------------------------------------
+      # Step 3: 依存パッケージのインストール
+      # --------------------------------------------------------
+      - name: 依存パッケージをインストール
+        # npm ci は package-lock.json に基づいて正確にインストールします
+        # npm install との違い: ci は lock ファイルを変更しないため、
+        # CI 環境では ci を使うのがベストプラクティスです
+        run: npm ci
+
+      # --------------------------------------------------------
+      # Step 4: TypeScript の型チェック
+      # --------------------------------------------------------
+      - name: TypeScript 型チェック
+        # tsc --noEmit はコンパイルせずに型チェックだけを行います
+        # 型エラーがあればここで失敗します
+        run: npx tsc --noEmit
+
+      # --------------------------------------------------------
+      # Step 5: テスト実行
+      # --------------------------------------------------------
+      - name: テストを実行
+        # vitest run でテストを実行します
+        # --reporter=verbose で詳細な結果を表示します
+        run: npx vitest run --reporter=verbose
+
+  # ----------------------------------------------------------
+  # フロントエンドテスト
+  # ----------------------------------------------------------
+  frontend-test:
+    name: Frontend Tests
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: リポジトリをチェックアウト
+        uses: actions/checkout@v4
+
+      - name: Node.js をセットアップ
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: 依存パッケージをインストール
+        run: npm ci
+
+      # --------------------------------------------------------
+      # フロントエンドのビルド確認
+      # --------------------------------------------------------
+      - name: TypeScript 型チェック & ビルド
+        # vite build は TypeScript のコンパイルとバンドルを行います
+        # ビルドが成功すれば、型エラーやインポートエラーがないことが確認できます
+        run: npm run build
+
+      - name: テストを実行
+        run: npx vitest run --reporter=verbose
+
+  # ----------------------------------------------------------
+  # HTML 検証（ビルド成果物の検証）
+  # ----------------------------------------------------------
+  html-validation:
+    name: HTML Validation
+
+    # frontend-test ジョブが成功した後に実行
+    # needs を使うと、ジョブ間の依存関係を定義できます
+    needs: frontend-test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: リポジトリをチェックアウト
+        uses: actions/checkout@v4
+
+      - name: Node.js をセットアップ
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: フロントエンドの依存パッケージをインストール
+        working-directory: frontend
+        run: npm ci
+
+      - name: フロントエンドをビルド
+        working-directory: frontend
+        # ビルドすると dist/ フォルダに HTML/CSS/JS が出力されます
+        run: npm run build
+
+      # --------------------------------------------------------
+      # HTML の検証
+      # html-validate を使って、ビルドされた HTML が正しい構文かチェックします
+      # --------------------------------------------------------
+      - name: html-validate をインストール
+        # html-validate は HTML の構文チェックツールです
+        run: npm install -g html-validate
+
+      - name: HTML を検証
+        working-directory: frontend
+        # dist/ フォルダ内の全 HTML ファイルを検証します
+        # 結果はログに出力されるので、Actions タブで確認できます
+        run: |
+          echo "=== HTML 検証結果 ==="
+          echo ""
+          echo "検証対象: frontend/dist/ 内の HTML ファイル"
+          echo "-------------------------------------------"
+          # dist 内の HTML ファイルを一覧表示
+          find dist -name "*.html" -type f | while read file; do
+            echo ""
+            echo ">> 検証中: $file"
+            # --formatter stylish で見やすい形式で出力
+            # 検証に失敗しても全ファイルをチェックするため || true を付ける
+            npx html-validate "$file" --formatter stylish || true
+          done
+          echo ""
+          echo "=== HTML 検証完了 ==="
+          # 最終的な検証（エラーがあればここで失敗）
+          npx html-validate "dist/**/*.html" --formatter stylish
