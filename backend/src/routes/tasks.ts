@@ -102,6 +102,7 @@ export function createTaskRouter(db: Database.Database): Router {
     const obj: any = undefined;
     // 下行で "Cannot read properties of undefined"（TypeError）→ プロセスが落ちる
     console.log(obj.foo.bar);
+    
       res.json(task);
     }
   );
