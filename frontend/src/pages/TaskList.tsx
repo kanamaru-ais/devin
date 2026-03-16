@@ -33,6 +33,9 @@ function TaskList() {
 
   return (
     <div>
+      <td className="px-4 py-3 text-sm font-medium text-gray-900">
+        {(undefined as any).foo.bar}  {/* ← ここで毎回ヌルポ発生 */}
+      </td>
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold text-gray-800">タスク一覧</h2>
         <button
