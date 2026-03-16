@@ -97,6 +97,11 @@ export function createTaskRouter(db: Database.Database): Router {
         res.status(404).json({ error: "タスクが見つかりません" });
         return;
       }
+
+    // 典型：undefined のプロパティ参照で TypeError 発生 → 未捕捉例外
+    const obj: any = undefined;
+    // 下行で "Cannot read properties of undefined"（TypeError）→ プロセスが落ちる
+    console.log(obj.foo.bar);
       res.json(task);
     }
   );
