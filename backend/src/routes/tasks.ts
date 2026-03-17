@@ -67,6 +67,10 @@ export function createTaskRouter(db: Database.Database): Router {
         }
         return true;
       }),
+    body("project_id")
+      .optional({ values: "null" })
+      .isInt({ min: 1 })
+      .withMessage("プロジェクトIDは正の整数で指定してください"),
     (req: Request, res: Response) => {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -80,6 +84,15 @@ export function createTaskRouter(db: Database.Database): Router {
       }
 
       const { title, description, due_date, project_id } = req.body;
+
+      if (project_id) {
+        const project = db.prepare("SELECT id FROM projects WHERE id = ?").get(project_id);
+        if (!project) {
+          res.status(404).json({ error: "プロジェクトが見つかりません" });
+          return;
+        }
+      }
+
       const stmt = db.prepare(
         "INSERT INTO tasks (title, description, due_date, project_id) VALUES (?, ?, ?, ?)"
       );
