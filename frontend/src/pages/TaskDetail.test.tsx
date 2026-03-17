@@ -48,6 +48,7 @@ describe("TaskDetail", () => {
       description: "テスト説明",
       status: "todo",
       due_date: "2027-01-01",
+      project_id: null,
       created_at: "2026-01-01T00:00:00",
       updated_at: "2026-01-01T00:00:00",
     });
@@ -75,6 +76,7 @@ describe("TaskDetail", () => {
       description: null,
       status: "todo",
       due_date: null,
+      project_id: null,
       created_at: "2026-01-01T00:00:00",
       updated_at: "2026-01-01T00:00:00",
     });

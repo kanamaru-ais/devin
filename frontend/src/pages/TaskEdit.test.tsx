@@ -45,6 +45,7 @@ describe("TaskEdit", () => {
       description: "テスト説明",
       status: "todo",
       due_date: null,
+      project_id: null,
       created_at: "2026-01-01",
       updated_at: "2026-01-01",
     });
@@ -65,6 +66,7 @@ describe("TaskEdit", () => {
       description: "",
       status: "todo",
       due_date: null,
+      project_id: null,
       created_at: "2026-01-01",
       updated_at: "2026-01-01",
     });
@@ -74,6 +76,7 @@ describe("TaskEdit", () => {
       description: null,
       status: "todo",
       due_date: null,
+      project_id: null,
       created_at: "2026-01-01",
       updated_at: "2026-01-01",
     });
@@ -104,6 +107,7 @@ describe("TaskEdit", () => {
       description: "",
       status: "todo",
       due_date: null,
+      project_id: null,
       created_at: "2026-01-01",
       updated_at: "2026-01-01",
     });

@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { createTask, ApiError } from "../lib/api";
 
 function TaskCreate() {
+  const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -44,8 +45,9 @@ function TaskCreate() {
         title: title.trim(),
         description: description.trim() || undefined,
         due_date: dueDate || undefined,
+        project_id: projectId ? Number(projectId) : undefined,
       });
-      navigate("/tasks");
+      navigate(projectId ? `/projects/${projectId}/tasks` : "/tasks");
     } catch (err: unknown) {
       const apiErr = err as ApiError;
       if (apiErr.errors) {
@@ -125,7 +127,7 @@ function TaskCreate() {
           </button>
           <button
             type="button"
-            onClick={() => navigate("/tasks")}
+            onClick={() => navigate(projectId ? `/projects/${projectId}/tasks` : "/tasks")}
             className="bg-gray-200 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-300 transition-colors font-medium"
           >
             キャンセル

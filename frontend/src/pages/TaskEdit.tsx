@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { fetchTask, updateTask, ApiError } from "../lib/api";
 
 function TaskEdit() {
-  const { id } = useParams<{ id: string }>();
+  const { id, projectId } = useParams<{ id: string; projectId: string }>();
   const navigate = useNavigate();
   const taskId = Number(id);
 
@@ -56,7 +56,7 @@ function TaskEdit() {
         title: title.trim(),
         description: description.trim() || undefined,
       });
-      navigate(`/tasks/${taskId}`);
+      navigate(projectId ? `/projects/${projectId}/tasks/${taskId}` : `/tasks/${taskId}`);
     } catch (err: unknown) {
       const apiErr = err as ApiError;
       if (apiErr.errors) {
@@ -128,7 +128,7 @@ function TaskEdit() {
           </button>
           <button
             type="button"
-            onClick={() => navigate(`/tasks/${taskId}`)}
+            onClick={() => navigate(projectId ? `/projects/${projectId}/tasks/${taskId}` : `/tasks/${taskId}`)}
             className="bg-gray-200 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-300 transition-colors font-medium"
           >
             キャンセル
