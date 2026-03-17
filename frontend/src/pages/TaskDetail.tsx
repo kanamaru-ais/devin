@@ -14,7 +14,7 @@ import {
 } from "../lib/api";
 
 function TaskDetail() {
-  const { id } = useParams<{ id: string }>();
+  const { id, projectId } = useParams<{ id: string; projectId: string }>();
   const navigate = useNavigate();
   const taskId = Number(id);
 
@@ -131,7 +131,7 @@ function TaskDetail() {
       <div className="bg-red-50 text-red-700 p-4 rounded-md">
         {error}
         <button
-          onClick={() => navigate("/tasks")}
+          onClick={() => navigate(projectId ? `/projects/${projectId}/tasks` : "/tasks")}
           className="ml-4 text-blue-600 underline"
         >
           一覧に戻る
@@ -216,13 +216,13 @@ function TaskDetail() {
 
         <div className="flex gap-3 mt-6 pt-4 border-t">
           <button
-            onClick={() => navigate(`/tasks/${task.id}/edit`)}
+            onClick={() => navigate(projectId ? `/projects/${projectId}/tasks/${task.id}/edit` : `/tasks/${task.id}/edit`)}
             className="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600 transition-colors font-medium"
           >
             編集
           </button>
           <button
-            onClick={() => navigate("/tasks")}
+            onClick={() => navigate(projectId ? `/projects/${projectId}/tasks` : "/tasks")}
             className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors font-medium"
           >
             戻る

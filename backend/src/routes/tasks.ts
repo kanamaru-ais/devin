@@ -12,6 +12,10 @@ export function createTaskRouter(db: Database.Database): Router {
       .optional()
       .isIn(["todo", "in_progress", "done"])
       .withMessage("ステータスは todo, in_progress, done のいずれかを指定してください"),
+    query("project_id")
+      .optional()
+      .isInt({ min: 1 })
+      .withMessage("プロジェクトIDは正の整数で指定してください"),
     (req: Request, res: Response) => {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -20,12 +24,21 @@ export function createTaskRouter(db: Database.Database): Router {
       }
 
       const status = req.query.status as string | undefined;
-      let tasks;
+      const projectId = req.query.project_id as string | undefined;
+      const conditions: string[] = [];
+      const params: (string | number)[] = [];
+
       if (status) {
-        tasks = db.prepare("SELECT * FROM tasks WHERE status = ? ORDER BY created_at DESC").all(status);
-      } else {
-        tasks = db.prepare("SELECT * FROM tasks ORDER BY created_at DESC").all();
+        conditions.push("status = ?");
+        params.push(status);
       }
+      if (projectId) {
+        conditions.push("project_id = ?");
+        params.push(Number(projectId));
+      }
+
+      const where = conditions.length > 0 ? ` WHERE ${conditions.join(" AND ")}` : "";
+      const tasks = db.prepare(`SELECT * FROM tasks${where} ORDER BY created_at DESC`).all(...params);
       res.json({ tasks });
     }
   );
@@ -66,11 +79,11 @@ export function createTaskRouter(db: Database.Database): Router {
         return;
       }
 
-      const { title, description, due_date } = req.body;
+      const { title, description, due_date, project_id } = req.body;
       const stmt = db.prepare(
-        "INSERT INTO tasks (title, description, due_date) VALUES (?, ?, ?)"
+        "INSERT INTO tasks (title, description, due_date, project_id) VALUES (?, ?, ?, ?)"
       );
-      const result = stmt.run(title, description || null, due_date || null);
+      const result = stmt.run(title, description || null, due_date || null, project_id || null);
       const task = db.prepare("SELECT * FROM tasks WHERE id = ?").get(result.lastInsertRowid);
       res.status(201).json(task);
     }

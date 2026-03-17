@@ -4,6 +4,7 @@ export interface Task {
   description: string | null;
   status: "todo" | "in_progress" | "done";
   due_date: string | null;
+  project_id: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -12,6 +13,13 @@ export interface Comment {
   id: number;
   task_id: number;
   body: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Project {
+  id: number;
+  name: string;
   created_at: string;
   updated_at: string;
 }
@@ -34,10 +42,50 @@ async function handleResponse<T>(response: Response): Promise<T> {
   return response.json();
 }
 
+// Projects API
+export async function fetchProjects(): Promise<{ projects: Project[] }> {
+  const response = await fetch(`${API_BASE}/projects`);
+  return handleResponse(response);
+}
+
+export async function fetchProject(id: number): Promise<Project> {
+  const response = await fetch(`${API_BASE}/projects/${id}`);
+  return handleResponse(response);
+}
+
+export async function createProject(name: string): Promise<Project> {
+  const response = await fetch(`${API_BASE}/projects`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name }),
+  });
+  return handleResponse(response);
+}
+
+export async function updateProject(id: number, name: string): Promise<Project> {
+  const response = await fetch(`${API_BASE}/projects/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name }),
+  });
+  return handleResponse(response);
+}
+
+export async function deleteProject(id: number): Promise<void> {
+  const response = await fetch(`${API_BASE}/projects/${id}`, { method: "DELETE" });
+  return handleResponse(response);
+}
+
 // Tasks API
-export async function fetchTasks(status?: string): Promise<{ tasks: Task[] }> {
-  const params = status ? `?status=${status}` : "";
-  const response = await fetch(`${API_BASE}/tasks${params}`);
+export async function fetchTasks(
+  status?: string,
+  projectId?: number
+): Promise<{ tasks: Task[] }> {
+  const params = new URLSearchParams();
+  if (status) params.set("status", status);
+  if (projectId) params.set("project_id", String(projectId));
+  const query = params.toString();
+  const response = await fetch(`${API_BASE}/tasks${query ? `?${query}` : ""}`);
   return handleResponse(response);
 }
 
@@ -50,6 +98,7 @@ export async function createTask(data: {
   title: string;
   description?: string;
   due_date?: string;
+  project_id?: number;
 }): Promise<Task> {
   const response = await fetch(`${API_BASE}/tasks`, {
     method: "POST",

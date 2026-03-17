@@ -1,23 +1,34 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { fetchTasks, Task, STATUS_LABELS, STATUS_COLORS } from "../lib/api";
+import { useParams, useNavigate } from "react-router-dom";
+import { fetchTasks, fetchProject, Task, Project, STATUS_LABELS, STATUS_COLORS } from "../lib/api";
 
 function TaskList() {
+  const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
+  const numericProjectId = projectId ? Number(projectId) : undefined;
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [project, setProject] = useState<Project | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     loadTasks();
-  }, [statusFilter]);
+  }, [statusFilter, numericProjectId]);
+
+  useEffect(() => {
+    if (numericProjectId) {
+      fetchProject(numericProjectId)
+        .then(setProject)
+        .catch(() => setProject(null));
+    }
+  }, [numericProjectId]);
 
   async function loadTasks() {
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchTasks(statusFilter || undefined);
+      const data = await fetchTasks(statusFilter || undefined, numericProjectId);
       setTasks(data.tasks);
     } catch {
       setError("タスクの取得に失敗しました");
@@ -33,14 +44,36 @@ function TaskList() {
 
   return (
     <div>
+      {project && (
+        <div className="mb-4 text-sm text-gray-500">
+          <button
+            onClick={() => navigate("/projects")}
+            className="text-blue-600 hover:underline"
+          >
+            プロジェクト一覧
+          </button>
+          <span className="mx-2">/</span>
+          <span className="text-gray-700 font-medium">{project.name}</span>
+        </div>
+      )}
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold text-gray-800">タスク一覧</h2>
-        <button
-          onClick={() => navigate("/tasks/new")}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium"
-        >
-          新規作成
-        </button>
+        <div className="flex gap-3">
+          {projectId && (
+            <button
+              onClick={() => navigate("/projects")}
+              className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+            >
+              戻る
+            </button>
+          )}
+          <button
+            onClick={() => navigate(projectId ? `/projects/${projectId}/tasks/new` : "/tasks/new")}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+          >
+            新規作成
+          </button>
+        </div>
       </div>
 
       <div className="mb-4">
@@ -94,7 +127,7 @@ function TaskList() {
               {tasks.map((task, index) => (
                 <tr
                   key={task.id}
-                  onClick={() => navigate(`/tasks/${task.id}`)}
+                  onClick={() => navigate(projectId ? `/projects/${projectId}/tasks/${task.id}` : `/tasks/${task.id}`)}
                   className="border-b last:border-b-0 hover:bg-gray-50 cursor-pointer transition-colors"
                 >
                   <td className="px-4 py-3 text-sm text-gray-500">

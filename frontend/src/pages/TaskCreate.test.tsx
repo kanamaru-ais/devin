@@ -56,6 +56,7 @@ describe("TaskCreate", () => {
       description: null,
       status: "todo",
       due_date: null,
+      project_id: null,
       created_at: "2026-01-01",
       updated_at: "2026-01-01",
     });
