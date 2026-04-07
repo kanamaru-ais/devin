@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
-import { body, query, param, validationResult } from "express-validator";
+import { body, query, param } from "express-validator";
 import Database from "better-sqlite3";
+import { handleValidationErrors } from "../helpers/validation.js";
 
 export function createTaskRouter(db: Database.Database): Router {
   const router = Router();
@@ -17,11 +18,7 @@ export function createTaskRouter(db: Database.Database): Router {
       .isInt({ min: 1 })
       .withMessage("プロジェクトIDは正の整数で指定してください"),
     (req: Request, res: Response) => {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        res.status(400).json({ errors: errors.array().map((e) => ({ field: e.type === "field" ? (e as any).path : "", message: e.msg })) });
-        return;
-      }
+      if (handleValidationErrors(req, res)) return;
 
       const status = req.query.status as string | undefined;
       const projectId = req.query.project_id as string | undefined;
@@ -72,16 +69,7 @@ export function createTaskRouter(db: Database.Database): Router {
       .isInt({ min: 1 })
       .withMessage("プロジェクトIDは正の整数で指定してください"),
     (req: Request, res: Response) => {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        res.status(400).json({
-          errors: errors.array().map((e) => ({
-            field: e.type === "field" ? (e as any).path : "",
-            message: e.msg,
-          })),
-        });
-        return;
-      }
+      if (handleValidationErrors(req, res)) return;
 
       const { title, description, due_date, project_id } = req.body;
 
@@ -107,16 +95,7 @@ export function createTaskRouter(db: Database.Database): Router {
     "/:id",
     param("id").isInt({ min: 1 }).withMessage("タスクIDは正の整数で指定してください"),
     (req: Request, res: Response) => {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        res.status(400).json({
-          errors: errors.array().map((e) => ({
-            field: e.type === "field" ? (e as any).path : "",
-            message: e.msg,
-          })),
-        });
-        return;
-      }
+      if (handleValidationErrors(req, res)) return;
 
       const task = db.prepare("SELECT * FROM tasks WHERE id = ?").get(req.params.id);
       if (!task) {
@@ -138,16 +117,7 @@ export function createTaskRouter(db: Database.Database): Router {
       .withMessage("タイトルは255文字以内で入力してください"),
     body("description").optional({ values: "null" }),
     (req: Request, res: Response) => {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        res.status(400).json({
-          errors: errors.array().map((e) => ({
-            field: e.type === "field" ? (e as any).path : "",
-            message: e.msg,
-          })),
-        });
-        return;
-      }
+      if (handleValidationErrors(req, res)) return;
 
       const existing = db.prepare("SELECT * FROM tasks WHERE id = ?").get(req.params.id);
       if (!existing) {
@@ -175,16 +145,7 @@ export function createTaskRouter(db: Database.Database): Router {
       .isIn(["todo", "in_progress", "done"])
       .withMessage("ステータスは todo, in_progress, done のいずれかを指定してください"),
     (req: Request, res: Response) => {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        res.status(400).json({
-          errors: errors.array().map((e) => ({
-            field: e.type === "field" ? (e as any).path : "",
-            message: e.msg,
-          })),
-        });
-        return;
-      }
+      if (handleValidationErrors(req, res)) return;
 
       const existing = db.prepare("SELECT * FROM tasks WHERE id = ?").get(req.params.id);
       if (!existing) {

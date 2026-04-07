@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { fetchProjects, createProject, updateProject, deleteProject, Project, ApiError } from "../lib/api";
+import { formatDateTime } from "../lib/date";
+import ErrorAlert from "../components/ErrorAlert";
 
 interface ProjectFormDialogProps {
   isOpen: boolean;
@@ -68,15 +70,7 @@ function ProjectFormDialog({
       <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md mx-4">
         <h3 className="text-lg font-bold text-gray-800 mb-4">{title}</h3>
 
-        {errors.length > 0 && (
-          <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-md mb-4">
-            <ul className="list-disc list-inside">
-              {errors.map((err, i) => (
-                <li key={i}>{err}</li>
-              ))}
-            </ul>
-          </div>
-        )}
+        <ErrorAlert errors={errors} />
 
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
@@ -202,16 +196,6 @@ function ProjectList() {
     }
   }
 
-  function formatDate(dateStr: string): string {
-    const d = new Date(dateStr + (dateStr.endsWith("Z") ? "" : "Z"));
-    return d.toLocaleString("ja-JP", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  }
 
   return (
     <div>
@@ -278,7 +262,7 @@ function ProjectList() {
                     className="px-4 py-3 text-sm text-gray-500 cursor-pointer"
                     onClick={() => navigate(`/projects/${project.id}/tasks`)}
                   >
-                    {formatDate(project.created_at)}
+                    {formatDateTime(project.created_at)}
                   </td>
                   <td className="px-4 py-3 text-right">
                     <button

@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
-import { body, param, validationResult } from "express-validator";
+import { body, param } from "express-validator";
 import Database from "better-sqlite3";
+import { handleValidationErrors } from "../helpers/validation.js";
 
 export function createCommentRouter(db: Database.Database): Router {
   const router = Router();
@@ -10,16 +11,7 @@ export function createCommentRouter(db: Database.Database): Router {
     "/:id/comments",
     param("id").isInt({ min: 1 }).withMessage("タスクIDは正の整数で指定してください"),
     (req: Request, res: Response) => {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        res.status(400).json({
-          errors: errors.array().map((e) => ({
-            field: e.type === "field" ? (e as any).path : "",
-            message: e.msg,
-          })),
-        });
-        return;
-      }
+      if (handleValidationErrors(req, res)) return;
 
       const task = db.prepare("SELECT * FROM tasks WHERE id = ?").get(req.params.id);
       if (!task) {
@@ -40,16 +32,7 @@ export function createCommentRouter(db: Database.Database): Router {
     param("id").isInt({ min: 1 }).withMessage("タスクIDは正の整数で指定してください"),
     body("body").notEmpty().withMessage("コメント本文は必須です"),
     (req: Request, res: Response) => {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        res.status(400).json({
-          errors: errors.array().map((e) => ({
-            field: e.type === "field" ? (e as any).path : "",
-            message: e.msg,
-          })),
-        });
-        return;
-      }
+      if (handleValidationErrors(req, res)) return;
 
       const task = db.prepare("SELECT * FROM tasks WHERE id = ?").get(req.params.id);
       if (!task) {
@@ -76,16 +59,7 @@ export function createCommentRouter(db: Database.Database): Router {
     param("commentId").isInt({ min: 1 }).withMessage("コメントIDは正の整数で指定してください"),
     body("body").notEmpty().withMessage("コメント本文は必須です"),
     (req: Request, res: Response) => {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        res.status(400).json({
-          errors: errors.array().map((e) => ({
-            field: e.type === "field" ? (e as any).path : "",
-            message: e.msg,
-          })),
-        });
-        return;
-      }
+      if (handleValidationErrors(req, res)) return;
 
       const comment = db
         .prepare("SELECT * FROM comments WHERE id = ? AND task_id = ?")
@@ -113,16 +87,7 @@ export function createCommentRouter(db: Database.Database): Router {
     param("id").isInt({ min: 1 }).withMessage("タスクIDは正の整数で指定してください"),
     param("commentId").isInt({ min: 1 }).withMessage("コメントIDは正の整数で指定してください"),
     (req: Request, res: Response) => {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        res.status(400).json({
-          errors: errors.array().map((e) => ({
-            field: e.type === "field" ? (e as any).path : "",
-            message: e.msg,
-          })),
-        });
-        return;
-      }
+      if (handleValidationErrors(req, res)) return;
 
       const comment = db
         .prepare("SELECT * FROM comments WHERE id = ? AND task_id = ?")
