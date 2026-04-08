@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { fetchTask, updateTask, ApiError } from "../lib/api";
+import ErrorAlert from "../components/ErrorAlert";
 
 function TaskEdit() {
   const { id, projectId } = useParams<{ id: string; projectId: string }>();
@@ -77,15 +78,7 @@ function TaskEdit() {
     <div>
       <h2 className="text-2xl font-bold text-gray-800 mb-6">タスク編集</h2>
 
-      {errors.length > 0 && (
-        <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-md mb-4">
-          <ul className="list-disc list-inside">
-            {errors.map((err, i) => (
-              <li key={i}>{err}</li>
-            ))}
-          </ul>
-        </div>
-      )}
+      <ErrorAlert errors={errors} />
 
       <form
         onSubmit={handleSubmit}

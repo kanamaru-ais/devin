@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { createTask, ApiError } from "../lib/api";
+import ErrorAlert from "../components/ErrorAlert";
 
 function TaskCreate() {
   const { projectId } = useParams<{ projectId: string }>();
@@ -64,15 +65,7 @@ function TaskCreate() {
     <div>
       <h2 className="text-2xl font-bold text-gray-800 mb-6">タスク作成</h2>
 
-      {errors.length > 0 && (
-        <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-md mb-4">
-          <ul className="list-disc list-inside">
-            {errors.map((err, i) => (
-              <li key={i}>{err}</li>
-            ))}
-          </ul>
-        </div>
-      )}
+      <ErrorAlert errors={errors} />
 
       <form
         onSubmit={handleSubmit}

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { fetchTasks, fetchProject, Task, Project, STATUS_LABELS, STATUS_COLORS } from "../lib/api";
+import { formatDate } from "../lib/date";
 
 function TaskList() {
   const { projectId } = useParams<{ projectId: string }>();
@@ -35,11 +36,6 @@ function TaskList() {
     } finally {
       setLoading(false);
     }
-  }
-
-  function formatDate(dateStr: string | null): string {
-    if (!dateStr) return "-";
-    return dateStr.split("T")[0];
   }
 
   return (

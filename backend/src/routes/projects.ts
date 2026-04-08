@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
-import { body, param, validationResult } from "express-validator";
+import { body, param } from "express-validator";
 import Database from "better-sqlite3";
+import { handleValidationErrors } from "../helpers/validation.js";
 
 export function createProjectRouter(db: Database.Database): Router {
   const router = Router();
@@ -20,16 +21,7 @@ export function createProjectRouter(db: Database.Database): Router {
       .isInt({ min: 1 })
       .withMessage("プロジェクトIDは正の整数で指定してください"),
     (req: Request, res: Response) => {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        res.status(400).json({
-          errors: errors.array().map((e) => ({
-            field: e.type === "field" ? (e as any).path : "",
-            message: e.msg,
-          })),
-        });
-        return;
-      }
+      if (handleValidationErrors(req, res)) return;
 
       const project = db
         .prepare("SELECT * FROM projects WHERE id = ?")
@@ -51,16 +43,7 @@ export function createProjectRouter(db: Database.Database): Router {
       .isLength({ max: 255 })
       .withMessage("プロジェクト名は255文字以内で入力してください"),
     (req: Request, res: Response) => {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        res.status(400).json({
-          errors: errors.array().map((e) => ({
-            field: e.type === "field" ? (e as any).path : "",
-            message: e.msg,
-          })),
-        });
-        return;
-      }
+      if (handleValidationErrors(req, res)) return;
 
       const { name } = req.body;
       const stmt = db.prepare("INSERT INTO projects (name) VALUES (?)");
@@ -84,16 +67,7 @@ export function createProjectRouter(db: Database.Database): Router {
       .isLength({ max: 255 })
       .withMessage("プロジェクト名は255文字以内で入力してください"),
     (req: Request, res: Response) => {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        res.status(400).json({
-          errors: errors.array().map((e) => ({
-            field: e.type === "field" ? (e as any).path : "",
-            message: e.msg,
-          })),
-        });
-        return;
-      }
+      if (handleValidationErrors(req, res)) return;
 
       const existing = db
         .prepare("SELECT * FROM projects WHERE id = ?")
@@ -122,16 +96,7 @@ export function createProjectRouter(db: Database.Database): Router {
       .isInt({ min: 1 })
       .withMessage("プロジェクトIDは正の整数で指定してください"),
     (req: Request, res: Response) => {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        res.status(400).json({
-          errors: errors.array().map((e) => ({
-            field: e.type === "field" ? (e as any).path : "",
-            message: e.msg,
-          })),
-        });
-        return;
-      }
+      if (handleValidationErrors(req, res)) return;
 
       const existing = db
         .prepare("SELECT * FROM projects WHERE id = ?")

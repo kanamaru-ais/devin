@@ -12,6 +12,7 @@ import {
   STATUS_LABELS,
   STATUS_COLORS,
 } from "../lib/api";
+import { formatDateTime } from "../lib/date";
 
 function TaskDetail() {
   const { id, projectId } = useParams<{ id: string; projectId: string }>();
@@ -109,17 +110,6 @@ function TaskDetail() {
     } catch {
       setCommentError("コメントの削除に失敗しました");
     }
-  }
-
-  function formatDateTime(dateStr: string): string {
-    const d = new Date(dateStr + (dateStr.endsWith("Z") ? "" : "Z"));
-    return d.toLocaleString("ja-JP", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
   }
 
   if (loading) {
