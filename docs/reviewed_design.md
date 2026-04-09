@@ -16,6 +16,7 @@
 |-----|-----------|--------|------|
 | 1 | tasks | タスク | タスク情報を管理する |
 | 2 | comments | コメント | タスクに対するコメントを管理する |
+| 3 | projects | プロジェクト | プロジェクト情報を管理する |
 
 ### 1.2 テーブル定義
 
@@ -28,12 +29,17 @@
 | 3 | description | 説明 | TEXT | | | NULL | |
 | 4 | status | ステータス | ENUM('todo','in_progress','done') | | ○ | 'todo' | 画面では日本語で表示する。<br>'todo':起票,<br>'in_progress':進行中,<br>'done':完了 |
 | 5 | due_date | 期限 | DATE | | | NULL | |
+| 5.5 | project_id | プロジェクトID | BIGINT | | | NULL | FK → projects.id |
 | 6 | created_at | 作成日時 | TIMESTAMP | | ○ | CURRENT_TIMESTAMP | |
 | 7 | updated_at | 更新日時 | TIMESTAMP | | ○ | CURRENT_TIMESTAMP | 更新時自動更新 |
 
 **インデックス：**
 - `idx_tasks_status` : `status`
 - `idx_tasks_due_date` : `due_date`
+- `idx_tasks_project_id` : `project_id`
+
+**外部キー：**
+- `fk_tasks_project_id` : `project_id` → `projects(id)` ON DELETE CASCADE
 
 #### 1.2.2 comments（コメント）
 
@@ -50,6 +56,15 @@
 
 **外部キー：**
 - `fk_comments_task_id` : `task_id` → `tasks(id)` ON DELETE CASCADE
+
+#### 1.2.3 projects（プロジェクト）
+
+| No. | カラム名 | 論理名 | データ型 | PK | NOT NULL | デフォルト | 備考 |
+|-----|---------|--------|---------|-----|----------|-----------|------|
+| 1 | id | プロジェクトID | BIGINT (AUTO_INCREMENT) | ○ | ○ | - | |
+| 2 | name | プロジェクト名 | VARCHAR(255) | | ○ | - | 最大255文字 |
+| 3 | created_at | 作成日時 | TIMESTAMP | | ○ | CURRENT_TIMESTAMP | |
+| 4 | updated_at | 更新日時 | TIMESTAMP | | ○ | CURRENT_TIMESTAMP | 更新時自動更新 |
 
 ### 1.3 ER図
 
@@ -68,6 +83,14 @@ skinparam entity {
   ArrowColor #333333
 }
 
+TABLE(projects, "projects\nプロジェクト") {
+  PK(id) : BIGINT <<AUTO_INCREMENT>>
+  --
+  COLUMN(name) : VARCHAR(255) <<NOT NULL>>
+  COLUMN(created_at) : TIMESTAMP <<NOT NULL>>
+  COLUMN(updated_at) : TIMESTAMP <<NOT NULL>>
+}
+
 TABLE(tasks, "tasks\nタスク") {
   PK(id) : BIGINT <<AUTO_INCREMENT>>
   --
@@ -75,6 +98,7 @@ TABLE(tasks, "tasks\nタスク") {
   COLUMN(description) : TEXT
   COLUMN(status) : ENUM('todo','in_progress','done') <<NOT NULL>>
   COLUMN(due_date) : DATE
+  FK(project_id) : BIGINT
   COLUMN(created_at) : TIMESTAMP <<NOT NULL>>
   COLUMN(updated_at) : TIMESTAMP <<NOT NULL>>
 }
@@ -88,6 +112,7 @@ TABLE(comments, "comments\nコメント") {
   COLUMN(updated_at) : TIMESTAMP <<NOT NULL>>
 }
 
+projects ||--o{ tasks : "1つのプロジェクトに\n複数のタスク"
 tasks ||--o{ comments : "1つのタスクに\n複数のコメント"
 
 @enduml
@@ -101,10 +126,11 @@ tasks ||--o{ comments : "1つのタスクに\n複数のコメント"
 
 | No. | 画面ID | 画面名 | URL | 概要 |
 |-----|--------|--------|-----|------|
-| 1 | SCR-001 | タスク一覧画面 | `/tasks` | タスクの一覧を表示する |
-| 2 | SCR-002 | タスク作成画面 | `/tasks/new` | 新規タスクを作成する |
-| 3 | SCR-003 | タスク詳細画面 | `/tasks/:id` | タスクの詳細情報とコメントを表示する |
-| 4 | SCR-004 | タスク編集画面 | `/tasks/:id/edit` | タスクの情報を編集する |
+| 1 | SCR-P01 | プロジェクト一覧画面 | `/projects` | プロジェクトの一覧表示・作成・編集・削除を行う |
+| 2 | SCR-001 | タスク一覧画面 | `/tasks` | タスクの一覧を表示する |
+| 3 | SCR-002 | タスク作成画面 | `/tasks/new` | 新規タスクを作成する |
+| 4 | SCR-003 | タスク詳細画面 | `/tasks/:id` | タスクの詳細情報とコメントを表示する |
+| 5 | SCR-004 | タスク編集画面 | `/tasks/:id/edit` | タスクの情報を編集する |
 
 ### 2.2 画面遷移図
 
@@ -118,10 +144,16 @@ skinparam state {
   FontSize 14
 }
 
+state "SCR-P01\nプロジェクト一覧画面" as ProjectList
 state "SCR-001\nタスク一覧画面" as TaskList
 state "SCR-002\nタスク作成画面" as TaskCreate
 state "SCR-003\nタスク詳細画面" as TaskDetail
 state "SCR-004\nタスク編集画面" as TaskEdit
+
+[*] --> ProjectList
+
+ProjectList --> TaskList : プロジェクト行クリック
+TaskList --> ProjectList : 「戻る」ボタン押下 /\nヘッダー「プロジェクト一覧」リンク
 
 TaskList --> TaskCreate : 「新規作成」ボタン押下
 TaskList --> TaskDetail : タスク行クリック
@@ -138,7 +170,53 @@ TaskEdit --> TaskDetail : 更新完了 / キャンセル
 
 ### 2.3 画面レイアウト
 
-#### 2.3.1 SCR-001 タスク一覧画面
+#### 2.3.1 SCR-P01 プロジェクト一覧画面
+
+**概要：** 全プロジェクトを一覧表示する。モーダルダイアログで作成・編集を行う。
+
+| No. | 要素 | 種類 | 必須 | バリデーション |
+|-----|------|------|------|--------------|
+| 1 | プロジェクト一覧テーブル | テーブル | - | - |
+| 2 | 新規作成ボタン | ボタン | - | - |
+| 3 | 編集ボタン（各行） | ボタン | - | - |
+| 4 | 削除ボタン（各行） | ボタン | - | - |
+| 5 | プロジェクト作成/編集ダイアログ | モーダル | - | - |
+| 6 | 削除確認ダイアログ | モーダル | - | - |
+
+**プロジェクト作成/編集ダイアログ：**
+
+| No. | 要素 | 種類 | 必須 | バリデーション |
+|-----|------|------|------|--------------|
+| 1 | プロジェクト名 | テキスト入力 | ○ | 1〜255文字 |
+| 2 | 作成/更新ボタン | ボタン | - | - |
+| 3 | キャンセルボタン | ボタン | - | - |
+
+```plantuml
+@startuml SCR-P01_プロジェクト一覧画面
+
+skinparam monochrome false
+skinparam shadowing false
+skinparam defaultFontSize 12
+
+salt
+{+
+  {* タスク管理アプリ }
+  ---
+  {+
+    <b>プロジェクト一覧</b> | [ 新規作成 ]
+    ---
+    {#
+      No. | プロジェクト名 | 作成日時 | 操作
+      1 | サンプルプロジェクト1 | 2026/04/01 10:00 | [編集] [削除]
+      2 | サンプルプロジェクト2 | 2026/03/15 09:00 | [編集] [削除]
+    }
+  }
+}
+
+@enduml
+```
+
+#### 2.3.2 SCR-001 タスク一覧画面
 
 **概要：** 全タスクを一覧表示する。ステータスでフィルタリングが可能。
 
@@ -176,7 +254,7 @@ salt
 @enduml
 ```
 
-#### 2.3.2 SCR-002 タスク作成画面
+#### 2.3.3 SCR-002 タスク作成画面
 
 **概要：** 新しいタスクを作成する。
 
@@ -217,7 +295,7 @@ salt
 @enduml
 ```
 
-#### 2.3.3 SCR-003 タスク詳細画面
+#### 2.3.4 SCR-003 タスク詳細画面
 
 **概要：** タスクの詳細情報を表示し、ステータスの変更やコメントの投稿・編集・削除を行う。
 
@@ -275,7 +353,7 @@ salt
 @enduml
 ```
 
-#### 2.3.4 SCR-004 タスク編集画面
+#### 2.3.5 SCR-004 タスク編集画面
 
 **概要：** タスクのタイトルと説明を編集する。
 
@@ -331,6 +409,11 @@ salt
 | 7 | POST | `/api/tasks/:id/comments` | コメント投稿 |
 | 8 | PUT | `/api/tasks/:id/comments/:commentId` | コメント編集 |
 | 9 | DELETE | `/api/tasks/:id/comments/:commentId` | コメント削除 |
+| 10 | GET | `/api/projects` | プロジェクト一覧取得 |
+| 11 | GET | `/api/projects/:id` | プロジェクト詳細取得 |
+| 12 | POST | `/api/projects` | プロジェクト作成 |
+| 13 | PUT | `/api/projects/:id` | プロジェクト名更新 |
+| 14 | DELETE | `/api/projects/:id` | プロジェクト削除 |
 
 ### 3.2 API詳細
 
@@ -620,6 +703,148 @@ salt
 }
 ```
 
+#### 3.2.10 GET `/api/projects` - プロジェクト一覧取得
+
+**レスポンス（200 OK）：**
+
+```json
+{
+  "projects": [
+    {
+      "id": 1,
+      "name": "サンプルプロジェクト",
+      "created_at": "2026-04-01T10:00:00Z",
+      "updated_at": "2026-04-01T10:00:00Z"
+    }
+  ]
+}
+```
+
+#### 3.2.11 GET `/api/projects/:id` - プロジェクト詳細取得
+
+**パスパラメータ：**
+
+| パラメータ | 型 | 必須 | 説明 |
+|-----------|-----|------|------|
+| id | integer | ○ | プロジェクトID（正の整数） |
+
+**レスポンス（200 OK）：**
+
+```json
+{
+  "id": 1,
+  "name": "サンプルプロジェクト",
+  "created_at": "2026-04-01T10:00:00Z",
+  "updated_at": "2026-04-01T10:00:00Z"
+}
+```
+
+**エラーレスポンス（404 Not Found）：**
+
+```json
+{
+  "error": "プロジェクトが見つかりません"
+}
+```
+
+**エラーレスポンス（400 Bad Request）：**
+
+```json
+{
+  "errors": [
+    { "field": "id", "message": "プロジェクトIDは正の整数で指定してください" }
+  ]
+}
+```
+
+#### 3.2.12 POST `/api/projects` - プロジェクト作成
+
+**リクエスト：**
+
+```json
+{
+  "name": "新しいプロジェクト"
+}
+```
+
+| パラメータ | 型 | 必須 | バリデーション |
+|-----------|-----|------|--------------|
+| name | string | ○ | 1〜255文字 |
+
+**レスポンス（201 Created）：**
+
+```json
+{
+  "id": 2,
+  "name": "新しいプロジェクト",
+  "created_at": "2026-04-01T12:00:00Z",
+  "updated_at": "2026-04-01T12:00:00Z"
+}
+```
+
+**エラーレスポンス（400 Bad Request）：**
+
+```json
+{
+  "errors": [
+    { "field": "name", "message": "プロジェクト名は必須です" }
+  ]
+}
+```
+
+#### 3.2.13 PUT `/api/projects/:id` - プロジェクト名更新
+
+**リクエスト：**
+
+```json
+{
+  "name": "更新後のプロジェクト名"
+}
+```
+
+| パラメータ | 型 | 必須 | バリデーション |
+|-----------|-----|------|--------------|
+| name | string | ○ | 1〜255文字 |
+
+**レスポンス（200 OK）：**
+
+```json
+{
+  "id": 1,
+  "name": "更新後のプロジェクト名",
+  "created_at": "2026-04-01T10:00:00Z",
+  "updated_at": "2026-04-05T15:00:00Z"
+}
+```
+
+**エラーレスポンス（404 Not Found）：**
+
+```json
+{
+  "error": "プロジェクトが見つかりません"
+}
+```
+
+#### 3.2.14 DELETE `/api/projects/:id` - プロジェクト削除
+
+**パスパラメータ：**
+
+| パラメータ | 型 | 必須 | 説明 |
+|-----------|-----|------|------|
+| id | integer | ○ | プロジェクトID（正の整数） |
+
+**レスポンス（204 No Content）：** レスポンスボディなし
+
+**エラーレスポンス（404 Not Found）：**
+
+```json
+{
+  "error": "プロジェクトが見つかりません"
+}
+```
+
+**注意：** プロジェクト削除時、紐づくタスクおよびコメントもカスケード削除される。
+
 ### 3.3 共通仕様
 
 #### 3.3.1 共通エラーレスポンス
@@ -823,6 +1048,92 @@ else 権限あり
   API --> FE : 204 No Content
   FE -> FE : コメントを一覧から除去
   FE -> User : 削除完了
+end
+
+@enduml
+```
+
+#### 3.4.5 プロジェクト作成フロー
+
+```plantuml
+@startuml プロジェクト作成シーケンス
+
+actor ユーザー as User
+participant "フロントエンド\n(ブラウザ)" as FE
+participant "APIサーバー" as API
+database "データベース" as DB
+
+User -> FE : 「新規作成」ボタンを押下
+FE -> FE : プロジェクト作成ダイアログを表示
+
+User -> FE : プロジェクト名を入力
+User -> FE : 「作成」ボタンを押下
+
+FE -> FE : バリデーション\n（必須チェック・文字数チェック）
+
+alt バリデーションエラー
+  FE -> User : エラーメッセージを表示
+else バリデーションOK
+  FE -> API : POST /api/projects\n{name}
+
+  API -> API : サーバー側バリデーション
+
+  alt バリデーションエラー
+    API --> FE : 400 Bad Request\n{errors: [...]}
+    FE -> User : エラーメッセージを表示
+  else バリデーションOK
+    API -> DB : INSERT INTO projects (name)
+    DB --> API : 挿入結果（新規プロジェクト）
+    API --> FE : 201 Created\n{id, name, created_at, updated_at}
+    FE -> FE : ダイアログを閉じる
+    FE -> API : GET /api/projects
+    API -> DB : SELECT * FROM projects
+    DB --> API : プロジェクト一覧
+    API --> FE : 200 OK\n{projects: [...]}
+    FE -> User : プロジェクト一覧を再表示
+  end
+end
+
+@enduml
+```
+
+#### 3.4.6 プロジェクト削除フロー
+
+```plantuml
+@startuml プロジェクト削除シーケンス
+
+actor ユーザー as User
+participant "フロントエンド\n(ブラウザ)" as FE
+participant "APIサーバー" as API
+database "データベース" as DB
+
+User -> FE : 「削除」ボタンを押下
+FE -> User : 削除確認ダイアログを表示\n「紐づくタスクもすべて削除されます」
+
+alt キャンセル
+  User -> FE : 「キャンセル」を押下
+  FE -> FE : ダイアログを閉じる
+else 削除確認
+  User -> FE : 「削除」を押下
+
+  FE -> API : DELETE /api/projects/:id
+
+  API -> DB : SELECT * FROM projects WHERE id = :id
+  DB --> API : プロジェクトデータ
+
+  alt プロジェクトが存在しない
+    API --> FE : 404 Not Found
+    FE -> User : エラーメッセージを表示
+  else プロジェクトが存在する
+    API -> DB : DELETE FROM projects WHERE id = :id\n（CASCADE で tasks, comments も削除）
+    DB --> API : 削除結果
+    API --> FE : 204 No Content
+    FE -> API : GET /api/projects
+    API -> DB : SELECT * FROM projects
+    DB --> API : プロジェクト一覧
+    API --> FE : 200 OK\n{projects: [...]}
+    FE -> User : プロジェクト一覧を再表示
+  end
 end
 
 @enduml
