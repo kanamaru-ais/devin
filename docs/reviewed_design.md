@@ -153,8 +153,7 @@ state "SCR-004\nタスク編集画面" as TaskEdit
 [*] --> ProjectList
 
 ProjectList --> TaskList : プロジェクト行クリック
-TaskList --> ProjectList : 「戻る」ボタン押下 /
-ヘッダー「プロジェクト一覧」リンク
+TaskList --> ProjectList : 「戻る」ボタン押下 /\nヘッダー「プロジェクト一覧」リンク
 
 TaskList --> TaskCreate : 「新規作成」ボタン押下
 TaskList --> TaskDetail : タスク行クリック
@@ -714,8 +713,8 @@ salt
     {
       "id": 1,
       "name": "サンプルプロジェクト",
-      "created_at": "2026-04-01 10:00:00",
-      "updated_at": "2026-04-01 10:00:00"
+      "created_at": "2026-04-01T10:00:00Z",
+      "updated_at": "2026-04-01T10:00:00Z"
     }
   ]
 }
@@ -735,8 +734,8 @@ salt
 {
   "id": 1,
   "name": "サンプルプロジェクト",
-  "created_at": "2026-04-01 10:00:00",
-  "updated_at": "2026-04-01 10:00:00"
+  "created_at": "2026-04-01T10:00:00Z",
+  "updated_at": "2026-04-01T10:00:00Z"
 }
 ```
 
@@ -778,8 +777,8 @@ salt
 {
   "id": 2,
   "name": "新しいプロジェクト",
-  "created_at": "2026-04-01 12:00:00",
-  "updated_at": "2026-04-01 12:00:00"
+  "created_at": "2026-04-01T12:00:00Z",
+  "updated_at": "2026-04-01T12:00:00Z"
 }
 ```
 
@@ -813,8 +812,8 @@ salt
 {
   "id": 1,
   "name": "更新後のプロジェクト名",
-  "created_at": "2026-04-01 10:00:00",
-  "updated_at": "2026-04-05 15:00:00"
+  "created_at": "2026-04-01T10:00:00Z",
+  "updated_at": "2026-04-05T15:00:00Z"
 }
 ```
 
